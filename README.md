@@ -222,6 +222,10 @@ We warmly welcome community contributions!
     style="width: 100%; max-height: 20rem; object-fit: contain;" 
 />
 
+<img 
+    src="https://res.cloudinary.com/dsrz0zcdl/image/upload/v1741986395/Screenshot_317_m1knk0.png" 
+    style="width: 100%; max-height: 20rem; object-fit: contain;" 
+/>
 </div>
 
 ---
