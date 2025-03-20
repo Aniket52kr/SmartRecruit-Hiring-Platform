@@ -1,9 +1,9 @@
 import emailjs from "@emailjs/browser";
 
 const sendEmail = async (templateParams) => {
-  const serviceID = "service_7z4e8tp"; 
-  const templateID = "template_93xwc5o"; 
-  const publicKey = "ykjMUB8SVSHI0-C3w"; 
+  const serviceID = "service_x444fac"; 
+  const templateID = "template_5ospemc"; 
+  const publicKey = "ZFwv-IudmD_mMN1V3"; 
 
   try {
     return await emailjs.send(serviceID, templateID, templateParams, publicKey);
@@ -16,6 +16,6 @@ const sendEmail = async (templateParams) => {
 
 export default sendEmail;
 
-// from aniket52kr2004@gmail.com        mail for apptitude test      from hrroundinfo.jsx    single done
+// from aniketbawankar70@gmail.com        mail for apptitude test      from hrroundinfo.jsx    single done
 // done email send
 // apptitude email send

@@ -18,6 +18,8 @@ let current = "entrance";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL;
 
+
+// Programming language versions:-
 const LANGUAGE_VERSIONS = {
   python: "3.10.0",
   javascript: "18.15.0",
@@ -85,22 +87,17 @@ const TechRound = () => {
   // Login form handler (Previously in UserInfoDialog)
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-
     try {
       if (!userId.trim()) {
         console.error("No userId found.");
         alert("User ID is required.");
         return;
       }
-
       const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
-      const emails =
-        response.data.candidateData?.map((candidate) => candidate.email) || [];
+      const emails = response.data.candidateData?.map((candidate) => candidate.email) || [];
       setCandidatesEmails(emails);
 
-      const emailExists = emails.some(
-        (candidateEmail) => candidateEmail === email
-      );
+      const emailExists = emails.some((candidateEmail) => candidateEmail === email);
 
       if (!emailExists) {
         alert("Email does not exist. Please enter a valid email.");
@@ -213,22 +210,67 @@ const TechRound = () => {
         setLoading(false);
       }
     };
-
     fetchProblems();
   }, []);
 
-  const handleEndSession = async () => {
-    alert(
-      "Do you really want to end this session, all your problems will be sent for checking?"
-    );
-    console.log("starthere");
-    console.log(
-      "Passing for tech : ",
-      passingMarks,
-      "CandidateSolved are : ",
-      currentlyScored
-    );
+  // Handle End Session:-
+  // const handleEndSession = async () => {
+  //   alert(
+  //     "Do you really want to end this session, all your problems will be sent for checking?"
+  //   );
+  //   console.log("starthere");
+  //   console.log(
+  //     "Passing for tech : ",
+  //     passingMarks,
+  //     "CandidateSolved are : ",
+  //     currentlyScored
+  //   );
 
+  //   try {
+  //     // Make the API call and wait for the response
+  //     const response = await axios.post(`${BACKEND_URL}/updateUser`, {
+  //       userId: localStorage.getItem("technicalUserId"),
+  //       userEmail: localStorage.getItem("technicalUserEmail"),
+  //       technicalScore: currentlyScored,
+  //     });
+  //     console.log("============:", response.data);
+
+  //     if (
+  //       response.data.techPass === "true" ||
+  //       response.data.techPass === true
+  //     ) {
+  //       console.log("Send email to hr round");
+  //       const templateParams = {
+  //         to_email: localStorage.getItem("technicalUserEmail"),
+  //         jobRole: jobRole,
+  //         linkForNextRound: ` ${FRONTEND_URL}/hrRoundEntrance`,
+  //         companyName: companyName,
+  //       };
+
+  //       try {
+  //         await sendHREmail(templateParams);
+  //         console.log("Email sent successfully!");
+  //       } catch (emailError) {
+  //         console.error("Failed to send email:", emailError);
+  //       }
+  //     }
+
+  //     alert(
+  //       "You have successfully completed the Technical round, we will update you to through the email soon."
+  //     );
+  //     window.location.reload(true);
+  //   } catch (error) {
+  //     console.error("Error updating user:", error);
+  //     alert("Failed to update user. Please try again.");
+  //   }
+  // };
+
+
+
+
+  // update handle session
+  const handleEndSession = async () => {
+    alert("Do you really want to end this session? All your problems will be sent for checking.");
     try {
       // Make the API call and wait for the response
       const response = await axios.post(`${BACKEND_URL}/updateUser`, {
@@ -236,37 +278,42 @@ const TechRound = () => {
         userEmail: localStorage.getItem("technicalUserEmail"),
         technicalScore: currentlyScored,
       });
-      console.log("============:", response.data);
 
-      if (
-        response.data.techPass === "true" ||
-        response.data.techPass === true
-      ) {
-        console.log("Send email to hr round");
-        const templateParams = {
-          to_email: localStorage.getItem("technicalUserEmail"),
-          jobRole: jobRole,
-          linkForNextRound: ` ${FRONTEND_URL}/hrRoundEntrance`,
-          companyName: companyName,
-        };
+      console.log("Response data:", response.data);
 
-        try {
-          await sendHREmail(templateParams);
-          console.log("Email sent successfully!");
-        } catch (emailError) {
-          console.error("Failed to send email:", emailError);
-        }
+      // Check if the student passed or failed
+      const hasPassed = response.data.techPass === "true" || response.data.techPass === true;
+
+      // Prepare email parameters
+      const templateParams = {
+        to_email: localStorage.getItem("technicalUserEmail"),
+        name: localStorage.getItem("userName"),
+        jobRole: jobRole,
+        companyName: companyName,
+      };
+
+      if (hasPassed) {
+        // Send success email
+        templateParams.linkForNextRound = `${FRONTEND_URL}/hrRoundEntrance`;
+        await sendHREmail(templateParams, true); // Pass `true` for success email
+        console.log("Success email sent successfully!");
+        alert("You have successfully completed the Technical round. We will update you through email soon.");
+      } else {
+        // Send rejection email
+        await sendHREmail(templateParams, false); // Pass `false` for failure email
+        console.log("Rejection email sent successfully!");
+        alert("Unfortunately, you did not pass the Technical round. We will update you through email soon.");
       }
 
-      alert(
-        "You have successfully completed the Technical round, we will update you to through the email soon."
-      );
+      // Reload the page after handling the session
       window.location.reload(true);
     } catch (error) {
       console.error("Error updating user:", error);
       alert("Failed to update user. Please try again.");
     }
   };
+
+
 
   // Fetch user info and set technical timing
   useEffect(() => {
@@ -295,7 +342,6 @@ const TechRound = () => {
         console.error("Error fetching user info:", error);
       }
     };
-
     fetchUserInfo();
   }, [techTiming]);
 

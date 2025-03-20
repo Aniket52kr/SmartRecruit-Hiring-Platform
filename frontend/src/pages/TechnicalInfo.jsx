@@ -158,58 +158,7 @@ export default function TechnicalInfo() {
     const isHr = localStorage.getItem("hrRound");
 
     console.log("burH: ", selectedProblems);
-    /*selectedProblems : {
-      burH:  
-(2) [{…}, {…}]
-0
-: 
-desc
-: 
-"Problem statement: Given a string, determine if it is a palindrome (reads the same forwards and backward).\nInput format: A single string s.\nOutput format: true if it's a palindrome, false otherwise.\nExample:\nInput:  \"racecar\"\nOutput: true\nConstraints: 1 <= length(s) <= 1000. The string consists of only lowercase English letters."
-id
-: 
-"STR-002"
-testCases
-: 
-Array(2)
-0
-: 
-{input: 'madam', expectedOutput: true}
-1
-: 
-{input: 'hello', expectedOutput: false}
-length
-: 
-2
-[[Prototype]]
-: 
-Array(0)
-title
-: 
-"Palindrome Check"
-[[Prototype]]
-: 
-Object
-1
-: 
-desc
-: 
-"Problem statement: Given a string, reverse it.\nInput format: A single string s.\nOutput format: The reversed string.\nExample:\nInput:  \"hello\"\nOutput: \"olleh\"\nConstraints: 1 <= length(s) <= 1000. The string consists of only lowercase English letters."
-id
-: 
-"STR-001"
-testCases
-: 
-Array(2)
-0
-: 
-{input: 'world', expectedOutput: 'dlrow'}
-1
-: 
-{input: 'coding', expectedOutput: 'gnidoc'}
-len
-    }*/
-
+    
     try {
       const response = await axios.post(`${BACKEND_URL}/addTech`, {
         problems: JSON.stringify({ problems: selectedProblems }),
