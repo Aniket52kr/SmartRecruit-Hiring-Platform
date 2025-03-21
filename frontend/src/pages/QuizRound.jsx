@@ -426,6 +426,7 @@ const QuizComponent = () => {
           company_name: companyName,
           to_email: userEmail,
           recipient_address: email,
+          userId: userid,
         };
 
         try {
