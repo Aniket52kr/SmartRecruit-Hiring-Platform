@@ -43,6 +43,8 @@ const QuizComponent = () => {
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [showCheatingModal, setShowCheatingModal] = useState(false);
 
+
+  // detect cheating by user:-
   const cheatingDetecedByUser = async () => {
     try {
       console.log("Cheating detected by user");
@@ -90,6 +92,8 @@ const QuizComponent = () => {
     loadModels();
   }, []);
 
+
+  // start video:-
   const startVideo = () => {
     navigator.mediaDevices
       .getUserMedia({ video: true })
@@ -101,6 +105,8 @@ const QuizComponent = () => {
       });
   };
 
+
+  // Use face detection model:-
   const loadModels = () => {
     Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri("/models")]).then(
       () => {
@@ -109,6 +115,8 @@ const QuizComponent = () => {
     );
   };
 
+  
+  // take screenshot when cheating detected:-
   const takeScreenshot = () => {
     const video = videoRef.current;
     const canvas = document.createElement("canvas");
@@ -119,6 +127,8 @@ const QuizComponent = () => {
     return canvas.toDataURL("image/png");
   };
 
+
+  // detect full body:-
   const detectFullBody = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -186,6 +196,8 @@ const QuizComponent = () => {
     });
   };
 
+
+
   const handleManualTrigger = () => {
     const screenshotData = takeScreenshot();
     setScreenshot(screenshotData);
@@ -231,6 +243,8 @@ const QuizComponent = () => {
       .padStart(2, "0")}`;
   };
 
+
+  // fetch user data:-
   const fetchUserInfo = async () => {
     try {
       const userId = userid;
@@ -254,6 +268,7 @@ const QuizComponent = () => {
     }
   };
 
+  // handle test submission:-
   const handleSubmit = async (e) => {
     e.preventDefault();
     await fetchUserInfo();
@@ -286,6 +301,7 @@ const QuizComponent = () => {
     }
   };
 
+  // Handle answer select:-
   const handleAnswerSelect = (quizId, selectedOption) => {
     setSelectedAnswers((prev) => ({
       ...prev,
@@ -450,8 +466,7 @@ const QuizComponent = () => {
    
 
 
-
-
+  // render user details form:- 
   const renderUserDetailsForm = () => (
     <div className="w-full max-w-md mx-auto bg-white shadow-md rounded-lg p-6">
       <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
@@ -520,6 +535,7 @@ const QuizComponent = () => {
     </div>
   );
 
+  // instruction before test start:-
   const InstructionsModal = () => {
     return (
       <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-50">
@@ -599,6 +615,7 @@ const QuizComponent = () => {
     );
   };
 
+  // render quizz question:-
   const renderQuizzes = () => (
     <div className="w-full max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6 space-y-6">
       {/* Timer Display */}
