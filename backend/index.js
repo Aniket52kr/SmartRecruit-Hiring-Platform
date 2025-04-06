@@ -1,3 +1,8 @@
+
+
+
+
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -10,9 +15,9 @@ app.use(express.json());
 
 const corsOptions = {
   origin: [
-    "https://smart-recruit-hiring-platform.vercel.app",
     process.env.FRONTEND_URL,
     "http://localhost:5173",
+    "https://smart-recruit-hiring-platform.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
@@ -69,18 +74,18 @@ const checkTechSolution = require("./routes/checkTechSolution");
 const cheatingDetected = require("./routes/cheatingDetected");
 
 // Use routes
-app.use(signup);
-app.use(login);
-app.use(addQuiz);
-app.use(getQuiz);
-app.use(generateQuiz);
-app.use(updateUser);
-app.use(generateTech);
-app.use(addTech);
-app.use(getTech);
-app.use(getUserInfo);
-app.use(checkTechSolution);
-app.use(cheatingDetected);
+app.use("/api", signup);
+app.use("/api", login);
+app.use("/api", addQuiz);
+app.use("/api", getQuiz);
+app.use("/api", generateQuiz);
+app.use("/api", updateUser);
+app.use("/api", generateTech);
+app.use("/api", addTech);
+app.use("/api", getTech);
+app.use("/api", getUserInfo);
+app.use("/api", checkTechSolution);
+app.use("/api", cheatingDetected);
 
 // Test route for users
 app.get("/", async (req, res) => {
