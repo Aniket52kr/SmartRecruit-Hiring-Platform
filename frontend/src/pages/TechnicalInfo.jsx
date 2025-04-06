@@ -177,7 +177,8 @@ export default function TechnicalInfo() {
 
     // Navigation simulation
     if (isHr === "true") {
-      window.location.href = "/hrInfo";
+      // window.location.href = "/hrInfo";
+      window.location.href = "/dashboard";
     } else {
       window.location.href = "/dashboard";
     }
