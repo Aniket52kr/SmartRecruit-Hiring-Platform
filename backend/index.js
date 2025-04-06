@@ -8,9 +8,9 @@ const app = express();
 // Setup CORS options
 const corsOptions = {
   origin: [
+    "https://smart-recruit-hiring-platform.vercel.app",
     process.env.FRONTEND_URL,
     "http://localhost:5173",
-    "https://smart-recruit-hiring-platform.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
