@@ -18,10 +18,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-
 // Middleware for parsing request bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
 
 // Connect to MongoDB
 mongoose
@@ -29,7 +29,6 @@ mongoose
   .then(() => console.log("Database Connected"))
   .catch((err) => console.error("Database Connection Failed:", err)
 );
-
 
 
 // Import Mongoose models
@@ -51,8 +50,7 @@ const checkTechSolution = require("./routes/checkTechSolution");
 const cheatingDetected = require("./routes/cheatingDetected");
 
 
-
-// Use all routes
+// Use all routes with '/api' prefix
 app.use("/api", signup);
 app.use("/api", login);
 app.use("/api", addQuiz);
@@ -65,7 +63,6 @@ app.use("/api", getTech);
 app.use("/api", getUserInfo);
 app.use("/api", checkTechSolution);
 app.use("/api", cheatingDetected);
-
 
 
 // Real-time text update routes
@@ -86,13 +83,10 @@ app.get("/api/events", (req, res) => {
   req.on("close", () => clearInterval(intervalId));
 });
 
-
 app.post("/api/update", (req, res) => {
   currentText = req.body.text;
   res.status(200).send("Text updated successfully");
 });
-
-
 
 // Test route to verify server is working
 app.get("/", async (req, res) => {
@@ -105,13 +99,16 @@ app.get("/", async (req, res) => {
   }
 });
 
+// Catch-all for undefined routes
+app.all("*", (req, res) => {
+  res.status(404).send("Route not found. Make sure to use /api/ prefix.");
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
-
 
 
 
