@@ -1,8 +1,3 @@
-
-
-
-
-
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -15,9 +10,9 @@ app.use(express.json());
 
 const corsOptions = {
   origin: [
+    "https://smart-recruit-hiring-platform.vercel.app",
     process.env.FRONTEND_URL,
     "http://localhost:5173",
-    "https://smart-recruit-hiring-platform.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
