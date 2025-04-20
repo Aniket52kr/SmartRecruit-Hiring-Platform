@@ -8,7 +8,6 @@ const cors = require("cors");
 const corsOptions = {
   origin: [
     process.env.FRONTEND_URL,
-    "https://smartrecruit-eight.vercel.app",
     "http://localhost:5173",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
