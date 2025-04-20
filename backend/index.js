@@ -11,6 +11,7 @@ app.use(express.json());
 const corsOptions = {
   origin: [
     process.env.FRONTEND_URL,
+    "https://smartrecruit.onrender.com",
     "http://localhost:5173",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
