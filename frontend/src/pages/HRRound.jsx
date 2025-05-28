@@ -133,8 +133,8 @@ export default function HRRound() {
 
   useEffect(() => {
     if (meetingContainerRef.current) {
-      const appID = 1214918818;
-      const serverSecret = "ba531fa7448117029ebf6ae628350b28";
+      const appID = 912395336;
+      const serverSecret = "67c2d15b9d70c787e2e9e1c799d5190a";
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appID, serverSecret, roomID, Date.now().toString(), "Enter your name"
       );
