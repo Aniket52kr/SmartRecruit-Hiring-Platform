@@ -26,6 +26,6 @@ export const sendCustomEmail = async (toEmail, message) => {
 
 
 
-// from aniket52kr2004@gmail.com            from dashboard.jsx
+// from dashboard.jsx
 // send custom message from recruiter through email 
 // Done sending email

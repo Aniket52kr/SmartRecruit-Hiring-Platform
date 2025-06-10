@@ -14,6 +14,6 @@ export default sendMeetInvitation;
 
 
 
-// from  aniketbawankar70@gmail.com           HRRound.jsx              single       done
+// HRRound.jsx              single       done
 // done email send
 // meet invitation email send

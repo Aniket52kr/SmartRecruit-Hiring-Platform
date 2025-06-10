@@ -39,6 +39,6 @@ export default CheatingEmail;
 
 
 
-// from aniket52kr2004@gmail.com           form dashboard.jsx           single         done template
+// form dashboard.jsx           single         done template
 // send email when candidate was doing some cheating during exam
 // done solve error

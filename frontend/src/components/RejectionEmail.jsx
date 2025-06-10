@@ -11,6 +11,6 @@ const sendRejectionEmail = (templateParams) => {
 
 export default sendRejectionEmail;
 
-// from aniket52kr.01@gmail.com       from quizround.jsx          double            done 
+//   from quizround.jsx          double            done 
 // done email send
 // test fail email send

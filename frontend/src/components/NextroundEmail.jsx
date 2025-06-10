@@ -11,6 +11,6 @@ const sendProgressEmail = (templateParams) => {
 
 export default sendProgressEmail;
 
-// from aniket52kr.01@gmail.com        form QuizRound.jsx           double          done template
+//   form QuizRound.jsx           double          done template
 // done email send
 // nextround email send

@@ -16,6 +16,6 @@ const sendEmail = async (templateParams) => {
 
 export default sendEmail;
 
-// from aniketbawankar70@gmail.com        mail for apptitude test      from hrroundinfo.jsx    single done
+// mail for apptitude test      from hrroundinfo.jsx    single done
 // done email send
 // apptitude email send

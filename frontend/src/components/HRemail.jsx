@@ -25,6 +25,6 @@ export default sendHREmail;
 
 
 
-// from  caniketbawankar@gmail.com          from TechRound.jsx              single
+// from TechRound.jsx              single
 // this template is use for successfully pass the technical round         done
 // this template is use for successfully fail the technical round         done
