@@ -6,6 +6,7 @@ import {
   XCircle,
   Ban,
   LogOut,
+  Home,
   User,
   Briefcase,
   Calendar,
@@ -52,6 +53,7 @@ const RecruiterInfoCard = ({ recruiterInfo }) => (
       </div>
 
       <LogoutButton />
+      <HomeButton />
     </div>
   </div>
 );
@@ -82,13 +84,33 @@ const LogoutButton = () => {
   return (
     <button
       onClick={handleLogout}
-      className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+      className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors mr-2"
     >
       <LogOut className="w-5 h-5" />
       <span>Logout</span>
     </button>
   );
 };
+
+
+// Home Button component:-
+const HomeButton = () => {
+  const navigate = useNavigate();
+
+  const handleHomeButton = () => {
+    navigate("/");
+  };
+
+  return (
+    <button
+      onClick={handleHomeButton}
+      className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+    >
+      <Home className="w-5 h-5" />
+      <span>Home</span>
+    </button>
+  )
+}
 
 
 
@@ -212,89 +234,6 @@ const CandidateRejectionModal = ({ isOpen, onClose, candidate, onReject }) => {
     </div>
   );
 };
-
-
-
-// // update email model:-
-// const EmailModal = ({ isOpen, onClose, candidateEmail }) => {
-//   const [message, setMessage] = useState("");
-//   const [isSending, setIsSending] = useState(false);
-
-//   // Debugging log
-//   // console.log("candidateEmail in EmailModal:", candidateEmail);
-
-//   // Handle email send function
-//   const handleSendEmail = async () => {
-//     if (!candidateEmail || candidateEmail.trim() === "") {
-//       alert("Error: Candidate email is missing or invalid.");
-//       return;
-//     }
-
-//     if (!message.trim()) {
-//       alert("Please enter a message");
-//       return;
-//     }
-
-//     setIsSending(true);
-//     try {
-//       await axios.post("/send-email", {
-//         to: candidateEmail.trim(), // Ensure no accidental spaces
-//         message,
-//       });
-//       alert("Email sent successfully");
-//       onClose();
-//     } catch (error) {
-//       console.error("Error sending email:", error);
-//       alert("Failed to send email");
-//     } finally {
-//       setIsSending(false);
-//     }
-//   };
-
-//   // Prevent rendering if modal should be closed
-//   if (!isOpen || !candidateEmail) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-//       <div className="bg-white rounded-xl shadow-2xl w-[600px] p-6">
-//         <h2 className="text-xl font-bold mb-4">
-//           Send Email to {candidateEmail}
-//         </h2>
-//         <textarea
-//           className="w-full h-40 border rounded-lg p-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//           placeholder="Type your message here..."
-//           value={message}
-//           onChange={(e) => setMessage(e.target.value)}
-//         />
-//         <div className="flex justify-end space-x-2">
-//           <button
-//             onClick={onClose}
-//             className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-//           >
-//             Cancel
-//           </button>
-//           <button
-//             onClick={handleSendEmail}
-//             disabled={isSending}
-//             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-//           >
-//             {isSending ? "Sending..." : "Send"}
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// // Add Prop Validation
-// EmailModal.propTypes = {
-//   isOpen: PropTypes.bool.isRequired,
-//   onClose: PropTypes.func.isRequired,
-//   candidateEmail: PropTypes.string.isRequired,
-// };
-
-
-
 
 
 
