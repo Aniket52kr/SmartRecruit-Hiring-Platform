@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 require("dotenv").config();
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 const addOnPrompt = `
 Generate a set of 4 technical interview questions on {{techType}} DSA problems. Each problem should include:
 - A unique ID for the problem (not serializable).
@@ -35,24 +37,78 @@ Return the set of problems as an array of objects in JSON format, where each obj
 }`;
 
 router.get("/generateTech", async (req, res) => {
-  const techType = req.query.techType;
-  const { GoogleGenerativeAI } = require("@google/generative-ai");
+  let techType = req.query.techType;
+  if (!techType || techType.trim() === "") {
+    techType = "common data structures and algorithms (DSA)";
+  }
+
   const genAI = new GoogleGenerativeAI(process.env.GEN_AI_API_KEY);
 
+  // Helper: retry function with exponential backoff
+  const retry = async (fn, retries = 3, delay = 2000) => {
+    try {
+      return await fn();
+    } catch (err) {
+      if (retries > 0 && (err.status === 503 || err.statusText === "Service Unavailable")) {
+        console.warn(`Model overloaded — retrying in ${delay / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return retry(fn, retries - 1, delay * 2);
+      }
+      throw err;
+    }
+  };
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const typeAddOnPrompt = addOnPrompt.replace("{{techType}}", techType);
-    const result = await model.generateContent(typeAddOnPrompt);
 
-    // Extract and parse the raw response
-    const rawResponse = await result.response.text();
-    const cleanedResponse = rawResponse.slice(7, -4).trim();
-    const responseText = JSON.parse(cleanedResponse);
+    // Use latest stable model
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    res.status(200).json(responseText); // Send the parsed JSON to the frontend
+    // Retry logic added for overloads
+    const result = await retry(async () => await model.generateContent(typeAddOnPrompt));
+    const rawResponse = result.response.text();
+    console.log("Raw Response:", rawResponse);
+
+    // Safe JSON parse (no brittle slicing)
+    let responseText;
+    try {
+      responseText = JSON.parse(rawResponse);
+    } catch (err) {
+      const start = rawResponse.indexOf("[");
+      const end = rawResponse.lastIndexOf("]");
+      if (start !== -1 && end !== -1) {
+        const jsonSubstring = rawResponse.slice(start, end + 1);
+        responseText = JSON.parse(jsonSubstring);
+      } else {
+        throw err;
+      }
+    }
+
+    res.status(200).json(responseText);
   } catch (error) {
     console.error("Error generating tech quiz:", error);
-    res.status(500).send("Failed to generate tech quiz");
+
+    // Fallback model if overloaded
+    if (error.status === 503) {
+      try {
+        console.log("Falling back to gemini-1.5-pro-latest...");
+        const fallbackModel = genAI.getGenerativeModel({
+          model: "gemini-1.5-pro-latest",
+        });
+        const fallbackPrompt = addOnPrompt.replace("{{techType}}", techType);
+        const result = await fallbackModel.generateContent(fallbackPrompt);
+        const rawResponse = result.response.text();
+        const techProblems = JSON.parse(rawResponse);
+        return res.status(200).json(techProblems);
+      } catch (fallbackError) {
+        console.error("Fallback model also failed:", fallbackError);
+      }
+    }
+
+    res.status(500).json({
+      message: "Failed to generate technical questions",
+      error: error.message,
+    });
   }
 });
 

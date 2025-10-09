@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+// POST /checkTechSolution
 router.post("/checkTechSolution", async (req, res) => {
   const { title, desc, code } = req.body;
 
@@ -13,39 +14,82 @@ router.post("/checkTechSolution", async (req, res) => {
       .json({ success: false, error: "Missing required fields" });
   }
 
+  // Initialize Gemini API
   const genAI = new GoogleGenerativeAI(process.env.GEN_AI_API_KEY);
 
+  // Construct prompt
   const addOnPrompt = `
-  ${title}
-    ${desc}
-    ${code}
-    Evaluate the following code solution against given problem requirements:
-    1. Check the solution against multiple test cases.
-    2. Return if the solution passes or fails each test case.
-    3. Provide hint for error messages for failed cases, including input and expected vs actual output.
-    4. Return the evaluation result in JSON format with the following structure exactly:
-    5. Respoonse should be small like around 10 lines. MAKE SURE YOU SHOULD NOT GIVE ANY SOLUTIONS IN THE RESPONSE.
-    6. Check the solution properly, even a small error in the code may lead to a failed evaluation.
-    {
-      "success": true/false,
-      "summary": "Summary of the evaluation"
-    }
+  Evaluate the following coding solution for correctness:
+  -----------------------------------
+  Problem Title: ${title}
+  Problem Description:
+  ${desc}
+
+  User Code:
+  ${code}
+  -----------------------------------
+
+  Analyze this code strictly against the problem requirements.
+  Check with multiple edge and hidden test cases.
+
+  Return JSON response (ONLY JSON, no markdown, no explanation), in this structure:
+  {
+    "success": true or false,
+    "summary": "Brief 1-line summary of evaluation result — include pass/fail info."
+  }
+
+  Make sure:
+  - Do not include code or solutions.
+  - Keep response under 10 lines.
+  - Be strict — small mistakes should mark failure.
   `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(addOnPrompt);
+    // Use the latest and stable Gemini model
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // Get the raw response text
-    let rawResponse = await result.response.text();
+    let attempt = 0;
+    const maxRetries = 3;
+    let result, rawResponse;
 
-    try {
-      const cleanedResponse = JSON.parse(rawResponse.slice(7, -4));
-      res.status(200).json({ success: true, cleanedResponse: cleanedResponse });
-    } catch (parseError) {
-      console.error("Error parsing response:", parseError);
-      res.status(500).json({ success: false, error: "Invalid JSON response" });
+    // Retry mechanism (handles 503 overload errors)
+    while (attempt < maxRetries) {
+      try {
+        result = await model.generateContent(addOnPrompt);
+        rawResponse = await result.response.text();
+        break; // Exit loop if success
+      } catch (err) {
+        attempt++;
+        console.warn(`Retrying Gemini API... Attempt ${attempt}`);
+        if (attempt >= maxRetries) throw err;
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+      }
     }
+
+    // Clean raw response (remove markdown fences if present)
+    let cleanedResponse = rawResponse
+      .replace(/^```json/, "")
+      .replace(/^```/, "")
+      .replace(/```$/, "")
+      .trim();
+
+    // Try parsing JSON safely
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanedResponse);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.log("Raw Response:", rawResponse);
+      return res
+        .status(500)
+        .json({ success: false, error: "Invalid JSON from Gemini" });
+    }
+
+    // Send final parsed result
+    res.status(200).json({
+      success: true,
+      evaluation: parsed,
+    });
   } catch (error) {
     console.error("Error evaluating solution:", error);
     res
