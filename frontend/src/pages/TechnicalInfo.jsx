@@ -97,7 +97,7 @@ export default function TechnicalInfo() {
     console.log("techGenerationType: ", techGenerationType);
     axios
       .get(`${BACKEND_URL}/generateTech`, {
-        timeout: 30000,
+        timeout: 60000,
         params: { techType: techGenerationType },
       })
       .then((response) => {
