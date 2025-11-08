@@ -733,6 +733,7 @@ const TechRound = () => {
   if (!currentProblem) {
     return null;
   }
+
   const handleSubmit = async () => {
     setSubmitIsRunning(true);
     try {
@@ -742,19 +743,22 @@ const TechRound = () => {
         code: code,
       });
 
-      console.log(response);
+      console.log("Api Response:", response.data);
 
-      if (response.data.cleanedResponse.success) {
+      const evalObj = response.data?.evaluation;
+
+      if (evalObj.success) {
         currentlyScored += 1;
       }
 
-      if (response.data) {
+      if (evalObj) {
         setOutput(
-          response.data.cleanedResponse.summary || "Evaluation successful"
+          evalObj.summary || "Evaluation successful"
         );
         setError(null);
       } else {
-        setError(response.data.error);
+          setError(response.data.error || "Unexpected response structure"
+        );
         setOutput("");
       }
 
