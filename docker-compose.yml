@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env.prod
-    expose:
+    ports:
       - "3000:3000"
     networks:
       - app
