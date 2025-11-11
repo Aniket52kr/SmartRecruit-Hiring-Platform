@@ -1,0 +1,32 @@
+name: Deploy to EC2 (Docker Compose)
+
+on:
+  workflow_run:
+    workflows: [ "Build and Push Docker Images" ]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repo on runner
+        uses: actions/checkout@v4
+
+      - name: Ensure Docker login
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Pull latest images
+        run: |
+          docker compose pull
+
+      - name: Start/Update services
+        run: |
+          docker compose up -d --remove-orphans
+
+      - name: Cleanup old images
+        run: |
+          docker image prune -f
