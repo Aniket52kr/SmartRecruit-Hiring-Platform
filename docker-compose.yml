@@ -1,0 +1,31 @@
+# version: '3.9'
+
+services:
+  backend:
+    image: aniket52kr/smartrecruit:backend
+    container_name: backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    expose:
+      - "3000"
+    networks:
+      - app
+
+
+  web:
+    image: aniket52kr/smartrecruit:frontend
+    container_name: web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - app
+
+
+networks:
+  app: 
+    driver: bridge
+    
