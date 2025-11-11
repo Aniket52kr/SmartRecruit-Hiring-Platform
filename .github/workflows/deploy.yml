@@ -15,12 +15,19 @@ jobs:
       - name: Checkout repo on runner
         uses: actions/checkout@v4
 
-      # Install Docker Compose V2 (official method)
+      # Install Docker Compose V2 
       - name: Install Docker Compose V2
         run: |
           sudo mkdir -p /usr/local/lib/docker/cli-plugins
-          sudo curl -SL https://github.com/docker/compose/releases/download/v2.24.7/docker-compose-linux-x86_64 \
-            -o /usr/local/lib/docker/cli-plugins/docker-compose
+          sudo rm -f /usr/local/lib/docker/cli-plugins/docker-compose
+          tries=5
+          while [ $tries -gt 0 ]; do
+            sudo curl -SL https://github.com/docker/compose/releases/download/v2.24.7/docker-compose-linux-x86_64 \
+              -o /usr/local/lib/docker/cli-plugins/docker-compose && break
+            echo "Retrying in 5s..."
+            sleep 5
+            tries=$((tries-1))
+          done
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
           docker compose version
 
