@@ -15,18 +15,36 @@ jobs:
       - name: Checkout repo on runner
         uses: actions/checkout@v4
 
+      # Install Docker Compose V2 (required for docker compose command)
+      - name: Install Docker Compose V2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
+
+      # Copy backend env file from secure location
+      - name: Ensure env file
+        run: |
+          mkdir -p backend
+          sudo cp /opt/smartrecruit/env/.env.prod backend/.env.prod
+          sudo chown ubuntu:ubuntu backend/.env.prod
+          sudo chmod 600 backend/.env.prod
+
+      # Login to Docker Hub
       - name: Ensure Docker login
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+      # Pull the latest Docker images from Docker Hub
       - name: Pull latest images
         run: |
           docker compose pull
 
+      # Start or update containers using docker-compose.yml
       - name: Start/Update services
         run: |
           docker compose up -d --remove-orphans
 
+      # Remove unused images to free space
       - name: Cleanup old images
         run: |
           docker image prune -f
