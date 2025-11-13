@@ -3,6 +3,8 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 
+import api from "../api/api";
+
 const RecruiterInfo = () => {
   const [startTime, setStartTime] = useState(null);
   const [endTime, setEndTime] = useState(null);
@@ -39,7 +41,7 @@ const RecruiterInfo = () => {
     console.log(data);
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/updateUser`, data, {
+      const response = await api.post("/updateUser", data, {
         headers: { "Content-Type": "application/json" },
       });
 

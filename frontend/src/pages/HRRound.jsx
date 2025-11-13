@@ -4,6 +4,7 @@ import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import axios from "axios";
 import sendMeetInvitation from "../components/MeetInvitation";
 
+import api from "../api/api";
 
 export default function HRRound() {
   const { id, candidateEmail } = useParams();
@@ -17,7 +18,7 @@ export default function HRRound() {
     const userId = localStorage.getItem("userId");
     const fetchCandidateData = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+        const response = await api.get(`/getUserInfo/${userId}`);
         setCompanyName(response.data.companyName);
       } catch (error) {
         console.error("Error fetching candidate data:", error);

@@ -11,6 +11,8 @@ import {
   EyeOff,
 } from "lucide-react";
 
+import api from "../api/api";
+
 export default function AptitudeInfo() {
   const navigate = useNavigate();
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -154,8 +156,8 @@ export default function AptitudeInfo() {
 
   const generateQuiz = () => {
     setLoader(true);
-    axios
-      .get(`${BACKEND_URL}/generateQuiz`, {
+    api
+      .get("/generateQuiz", {
         params: { quizType: quizGenerationType },
       })
       .then((response) => {
@@ -178,8 +180,8 @@ export default function AptitudeInfo() {
 
   const getAlreadyGeneratedQuiz = () => {
     setLoader(true);
-    axios
-      .get(`${BACKEND_URL}/getQuiz`)
+    api
+      .get("/getQuiz")
       .then((response) => {
         const quizzesWithUniqueKeys = response.data.map((quiz) => ({
           ...quiz,
@@ -207,7 +209,7 @@ export default function AptitudeInfo() {
     }
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
+      const response = await api.post("/updateUser", {
         userId: userID,
         passingMarks,
       });
@@ -223,7 +225,7 @@ export default function AptitudeInfo() {
         navigate("/dashboard");
       }
 
-      const quizResponse = await axios.post(`${BACKEND_URL}/addQuiz`, {
+      const quizResponse = await api.post("/addQuiz", {
         questions: selectedQuizzes.map((quiz) => ({
           que: quiz.que,
           a: quiz.a,

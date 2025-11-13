@@ -13,6 +13,9 @@ import {
 import axios from "axios";
 import sendHREmail from "../components/HRemail";
 
+
+import api from "../api/api";
+
 // Keep existing global variables
 let current = "entrance";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -93,7 +96,7 @@ const TechRound = () => {
         alert("User ID is required.");
         return;
       }
-      const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+      const response = await api.get(`/getUserInfo/${userId}`);
       const emails = response.data.candidateData?.map((candidate) => candidate.email) || [];
       setCandidatesEmails(emails);
 
@@ -126,7 +129,7 @@ const TechRound = () => {
     isPasteAllowed = false;
 
     try {
-      const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+      const response = await api.get(`/getUserInfo/${userId}`);
       const techTime = response.data.techTime || 0;
       localStorage.setItem("techTime", techTime);
     } catch (error) {
@@ -191,7 +194,7 @@ const TechRound = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/getTech`, {
+        const response = await api.get("/getTech", {
           params: { userId: localStorage.getItem("technicalUserId") },
           headers: { "Content-Type": "application/json" },
         });
@@ -273,7 +276,7 @@ const TechRound = () => {
     alert("Do you really want to end this session? All your problems will be sent for checking.");
     try {
       // Make the API call and wait for the response
-      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
+      const response = await api.post("/updateUser", {
         userId: localStorage.getItem("technicalUserId"),
         userEmail: localStorage.getItem("technicalUserEmail"),
         technicalScore: currentlyScored,
@@ -325,8 +328,8 @@ const TechRound = () => {
           return;
         }
 
-        const response = await axios.get(
-          `${BACKEND_URL}/getUserInfo/${userId}`
+        const response = await api.get(
+          `/getUserInfo/${userId}`
         );
 
         console.log("All backend data : ", response.data);
@@ -397,7 +400,7 @@ const TechRound = () => {
         const problemCode = codeStore[i] || code;
 
         if (problemCode) {
-          await axios.post(`${BACKEND_URL}/checkTechSolution`, {
+          await api.post("/checkTechSolution", {
             title: problems[i].title,
             desc: problems[i].desc,
             code: problemCode,
@@ -419,7 +422,7 @@ const TechRound = () => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/getTech`, {
+        const response = await api.get("/getTech", {
           params: { userId: localStorage.getItem("technicalUserId") },
           headers: { "Content-Type": "application/json" },
         });

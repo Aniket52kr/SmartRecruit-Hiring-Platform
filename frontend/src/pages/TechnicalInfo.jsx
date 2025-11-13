@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import api from "../api/api";
+
 export default function TechnicalInfo() {
   const [showPreGenerated, setShowPreGenerated] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -95,8 +97,8 @@ export default function TechnicalInfo() {
     setLoader(true);
     // Simulated fetch
     console.log("techGenerationType: ", techGenerationType);
-    axios
-      .get(`${BACKEND_URL}/generateTech`, {
+    api
+      .get("/generateTech", {
         timeout: 60000,
         params: { techType: techGenerationType },
       })
@@ -115,13 +117,42 @@ export default function TechnicalInfo() {
       });
   };
 
+  // const getAlreadyGeneratedProblems = () => {
+  //   setLoader(true);
+  //   // Simulated fetch
+  //   fetch("/getTech")
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log(data.techEntries);
+  //       setExistingProblems(data.techEntries);
+  //       setLoader(false);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error fetching technical problems:", error);
+  //       setLoader(false);
+  //       // Fallback data in case of error
+  //       setExistingProblems([
+  //         {
+  //           id: "E1C9Z",
+  //           title: "Implement a Stack",
+  //           desc: "Design a stack data structure with push, pop, and top operations.\n\nImplement methods:\n- push(x): Adds an element to the top of the stack\n- pop(): Removes and returns the top element\n- top(): Returns the top element without removing it\n- isEmpty(): Checks if the stack is empty\n\nConstraints: Implement without using built-in stack data structures.",
+  //         },
+  //         {
+  //           id: "E2D7W",
+  //           title: "Binary Search Implementation",
+  //           desc: "Implement a binary search algorithm on a sorted array.\n\nFunctions to implement:\n- binarySearch(arr, target): Returns the index of the target element\n- If not found, return -1\n\nExample:\nInput: arr = [1, 3, 5, 7, 9], target = 5\nOutput: 2\n\nConstraints: Array is sorted in ascending order. Time complexity should be O(log n).",
+  //         },
+  //       ]);
+  //     });
+  // };
+
+
   const getAlreadyGeneratedProblems = () => {
     setLoader(true);
-    // Simulated fetch
-    fetch(`${BACKEND_URL}/getTech`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data.techEntries);
+    api
+      .get("/getTech")
+      .then(({ data }) => {
+        // axios already parses JSON and returns { data: ... }
         setExistingProblems(data.techEntries);
         setLoader(false);
       })
@@ -135,18 +166,21 @@ export default function TechnicalInfo() {
             title: "Implement a Stack",
             desc: "Design a stack data structure with push, pop, and top operations.\n\nImplement methods:\n- push(x): Adds an element to the top of the stack\n- pop(): Removes and returns the top element\n- top(): Returns the top element without removing it\n- isEmpty(): Checks if the stack is empty\n\nConstraints: Implement without using built-in stack data structures.",
           },
-          {
+          { 
             id: "E2D7W",
             title: "Binary Search Implementation",
             desc: "Implement a binary search algorithm on a sorted array.\n\nFunctions to implement:\n- binarySearch(arr, target): Returns the index of the target element\n- If not found, return -1\n\nExample:\nInput: arr = [1, 3, 5, 7, 9], target = 5\nOutput: 2\n\nConstraints: Array is sorted in ascending order. Time complexity should be O(log n).",
           },
         ]);
       });
-  };
+  };  
+
+
+
 
   const nextRound = async () => {
     try {
-      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
+      const response = await api.post("/updateUser", {
         userId: localStorage.getItem("userId"), // Assume recruiter is logged in and we have their email
         passingMarksofTech: passingMarks, // Send the array of candidate objects
       });
@@ -160,7 +194,7 @@ export default function TechnicalInfo() {
     console.log("burH: ", selectedProblems);
     
     try {
-      const response = await axios.post(`${BACKEND_URL}/addTech`, {
+      const response = await api.post("/addTech", {
         problems: JSON.stringify({ problems: selectedProblems }),
         userId: localStorage.getItem("userId"),
       });

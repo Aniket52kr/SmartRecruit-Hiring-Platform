@@ -5,6 +5,8 @@ import sendRejectionEmail from "../components/RejectionEmail";
 import "../index.css";
 import * as faceapi from "face-api.js";
 
+import api from "../api/api";
+
 let currentPage = "entrance";
 
 const QuizComponent = () => {
@@ -51,7 +53,7 @@ const QuizComponent = () => {
       console.log("user: ", userid);
       console.log("cheatComment: ", cheatComment);
 
-      const response = await axios.post(`${BACKEND_URL}/cheatingDetected`, {
+      const response = await api.post("/cheatingDetected", {
         userId: userid,
         email: email,
         comment: cheatComment || "No comment provided",
@@ -253,7 +255,7 @@ const QuizComponent = () => {
         return;
       }
 
-      const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+      const response = await api.get(`/getUserInfo/${userId}`);
       console.log("Dashboard data:", response.data);
       setJobrole(response.data.jobRole);
       setHremail(response.data.email);
@@ -283,7 +285,7 @@ const QuizComponent = () => {
 
     try {
       setLoading(true);
-      const response = await axios.get(`${BACKEND_URL}/getQuiz`, {
+      const response = await api.get("/getQuiz", {
         params: { userId: userid },
       });
       console.log("Quiz Responses : ", response);
@@ -402,7 +404,7 @@ const QuizComponent = () => {
     }
 
     try {
-      const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+      const response = await api.get(`/getUserInfo/${userId}`);
       const user = response.data;
       const passingMarks = user.aptitudePassingMarks;
 
@@ -410,7 +412,7 @@ const QuizComponent = () => {
         `User's passing marks: ${passingMarks}, Your score: ${score}`
       );
 
-      await axios.post(`${BACKEND_URL}/updateUser`, {
+      await api.post("/updateUser", {
         userId,
         userEmail,
         score,

@@ -18,6 +18,8 @@ import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 
 
+import api from "../api/api";
+
 
 // Component for Recruiter Info Card
 const RecruiterInfoCard = ({ recruiterInfo }) => (
@@ -338,8 +340,8 @@ const RecruitmentDashboard = () => {
           return;
         }
 
-        const response = await axios.get(
-          `${BACKEND_URL}/getUserInfo/${userId}`
+        const response = await api.get(
+          `/getUserInfo/${userId}`
         );
         setRecruiterInfo(response.data);
 

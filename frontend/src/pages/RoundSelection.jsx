@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
+import api from "../api/api";
+
 const RoundSelection = () => {
   const [selectedRounds, setSelectedRounds] = useState({
     aptitude: true,
@@ -30,7 +32,7 @@ const RoundSelection = () => {
         return;
       }
 
-      const response = await axios.get(`${BACKEND_URL}/getUserInfo/${userId}`);
+      const response = await api.get(`/getUserInfo/${userId}`);
       console.log("Dashboard data:", response.data);
       setuserid(response.data._id);
     } catch (error) {
@@ -62,7 +64,7 @@ const RoundSelection = () => {
   const handleSubmit = async () => {
     try {
       // Make the API call and wait for the response
-      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
+      const response = await api.post("/updateUser", {
         userId: userid,
         aptitudeTime: roundDurations.aptitude,
         techTime: roundDurations.technical,
