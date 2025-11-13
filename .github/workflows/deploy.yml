@@ -65,7 +65,9 @@ jobs:
           id || true
           uname -a || true
           docker --version || true
+          # try both, ignore error
           docker compose version || true
+          docker-compose --version || true
 
       - name: Login to Docker Hub on runner
         uses: docker/login-action@v3
@@ -120,16 +122,38 @@ jobs:
           sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
           sed -n '1,240p' docker-compose.yml || true
 
-      - name: Pull images & restart compose
+      - name: Pull images & restart compose (compatible)
         env:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
           cd "$DEPLOY_DIR"
+
+          # choose compose command: prefer `docker compose`, fallback to `docker-compose`
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+          elif docker-compose --version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker-compose"
+          else
+            echo "ERROR: neither 'docker compose' nor 'docker-compose' is available on runner."
+            exit 1
+          fi
+
+          echo "Using compose command: $COMPOSE_CMD"
+
+          # ensure network exists (ignore error if already exists)
           docker network create smartrecruit-network || true
-          docker compose down || true
-          docker compose pull --ignore-pull-failures
-          docker compose up -d --remove-orphans
+
+          # bring down existing stack (ignore errors)
+          $COMPOSE_CMD down || true
+
+          # pull images (do not use flags that older clients don't support)
+          $COMPOSE_CMD pull || true
+
+          # start stack, remove orphans when supported
+          # older docker-compose supports --remove-orphans too
+          $COMPOSE_CMD up -d --remove-orphans || $COMPOSE_CMD up -d || true
+
           sleep 3
           docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 
