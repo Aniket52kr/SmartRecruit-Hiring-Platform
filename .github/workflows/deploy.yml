@@ -12,11 +12,6 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      backend-tag: ${{ steps.backend.outputs.tag }}
-      frontend-tag: ${{ steps.frontend.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,12 +32,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-latest
-        # export the tag for downstream job
-      - name: Set backend output tag
-        if: always()
-        run: echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-${{ github.sha }}" >> $GITHUB_OUTPUT
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-backend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-backend:latest
 
       - name: Build and push frontend
         id: frontend
@@ -56,18 +47,17 @@ jobs:
             VITE_APP_ID=${{ secrets.VITE_APP_ID }}
             VITE_SERVER_SECRET=${{ secrets.VITE_SERVER_SECRET }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-${{ github.sha }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-latest
-
-      - name: Set frontend output tag
-        if: always()
-        run: echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-${{ github.sha }}" >> $GITHUB_OUTPUT
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:latest
 
   deploy:
     needs: build-and-push
     runs-on: [self-hosted, linux]
     environment: production
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Show runner info
         run: |
           echo "Deploy running on $(hostname)"
@@ -82,39 +72,45 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Ensure deploy dir exists & copy compose
+        env:
+          DEPLOY_DIR: ~/smartrecruit
         run: |
-          DEPLOY_DIR=~/smartrecruit
+          set -euo pipefail
           mkdir -p "$DEPLOY_DIR"
-          # overwrite the remote copy of docker-compose.yml with the one from the repo
-          # The workflow runner checks out the repo into a workspace; copy file from there to DEPLOY_DIR
           cp -f ./docker-compose.yml "$DEPLOY_DIR/docker-compose.yml"
           cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
           cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
           ls -l "$DEPLOY_DIR"
 
-      - name: Pull images & restart compose
+      - name: Replace latest tags with SHA-tagged images
+        env:
+          DEPLOY_DIR: ~/smartrecruit
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          DEPLOY_DIR=~/smartrecruit
           cd "$DEPLOY_DIR"
+          cp docker-compose.yml docker-compose.yml.bak
+          sed -E "s|(${DH_USER}/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
+          sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
+          echo "---- docker-compose.yml after replacement ----"
+          sed -n '1,240p' docker-compose.yml || true
+          echo "-----------------------------------------------"
 
-          # ensure network exists (runner should already have it)
+      - name: Pull images & restart compose
+        env:
+          DEPLOY_DIR: ~/smartrecruit
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_DIR"
           docker network create smartrecruit-network || true
-
-          # Stop existing stack
           docker-compose down || true
-
-          # Pull the images built in the previous job (frontend-latest & backend-latest)
           docker-compose pull --ignore-pull-failures
-
-          # Start stack
           docker-compose up -d --remove-orphans
-
-          # Show status
           sleep 3
           docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 
-      - name: Wait & show logs (brief)
+      - name: Wait & show logs
         run: |
           sleep 5
           docker logs smartrecruit-backend --tail 120 || true
