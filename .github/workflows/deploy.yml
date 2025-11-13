@@ -1,4 +1,4 @@
-name: Build, Push & Deploy
+name: Build and Deploy
 
 on:
   push:
@@ -7,14 +7,16 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build-and-push:
+    name: Build and push images
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -26,7 +28,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push backend
-        id: backend
         uses: docker/build-push-action@v6
         with:
           context: ./backend
@@ -36,7 +37,6 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-backend:latest
 
       - name: Build and push frontend
-        id: frontend
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
@@ -51,19 +51,15 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:latest
 
   deploy:
+    name: Deploy on self-hosted runner
     needs: build-and-push
     runs-on: [self-hosted, linux]
     environment: production
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Show runner info
-        run: |
-          echo "Deploy running on $(hostname)"
-          whoami
-          docker --version || true
-          docker-compose --version || true
+        with:
+          fetch-depth: 0
 
       - name: Login to Docker Hub on runner
         uses: docker/login-action@v3
@@ -71,18 +67,43 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Ensure deploy dir exists & copy compose
+      - name: Prepare deploy directory and compose
         env:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
-          mkdir -p "$DEPLOY_DIR"
-          cp -f ./docker-compose.yml "$DEPLOY_DIR/docker-compose.yml"
-          cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
-          cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
-          ls -l "$DEPLOY_DIR"
 
-      - name: Replace latest tags with SHA-tagged images
+          mkdir -p "$DEPLOY_DIR"
+
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "Listing repository root (GITHUB_WORKSPACE):"
+          ls -la "$GITHUB_WORKSPACE" || true
+
+          # Try common locations for compose file
+          if [ -f "$GITHUB_WORKSPACE/docker-compose.yml" ]; then
+            SRC="$GITHUB_WORKSPACE/docker-compose.yml"
+          elif [ -f "$GITHUB_WORKSPACE/docker-compose.yaml" ]; then
+            SRC="$GITHUB_WORKSPACE/docker-compose.yaml"
+          elif [ -f "$GITHUB_WORKSPACE/infra/docker-compose.yml" ]; then
+            SRC="$GITHUB_WORKSPACE/infra/docker-compose.yml"
+          else
+            echo "ERROR: docker-compose not found in common locations under $GITHUB_WORKSPACE"
+            echo "Contents of $GITHUB_WORKSPACE:"
+            ls -la "$GITHUB_WORKSPACE" || true
+            exit 1
+          fi
+
+          echo "Copying compose from $SRC to $DEPLOY_DIR/docker-compose.yml"
+          cp -f "$SRC" "$DEPLOY_DIR/docker-compose.yml"
+
+          # optional: copy env examples (no-fail)
+          cp -f "$GITHUB_WORKSPACE/backend/.env.example" "$DEPLOY_DIR/backend/.env.example" || true
+          cp -f "$GITHUB_WORKSPACE/frontend/.env.example" "$DEPLOY_DIR/frontend/.env.example" || true
+
+          echo "Files in $DEPLOY_DIR:"
+          ls -la "$DEPLOY_DIR"
+
+      - name: Pin images to current SHA
         env:
           DEPLOY_DIR: ~/smartrecruit
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -93,25 +114,30 @@ jobs:
           cp docker-compose.yml docker-compose.yml.bak
           sed -E "s|(${DH_USER}/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
           sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
-          echo "---- docker-compose.yml after replacement ----"
+          echo "---- docker-compose.yml ----"
           sed -n '1,240p' docker-compose.yml || true
-          echo "-----------------------------------------------"
 
-      - name: Pull images & restart compose
+      - name: Pull images and restart stack
         env:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
+          if command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE="docker-compose"
+          else
+            COMPOSE="docker compose"
+          fi
+
           cd "$DEPLOY_DIR"
           docker network create smartrecruit-network || true
-          docker-compose down || true
-          docker-compose pull --ignore-pull-failures
-          docker-compose up -d --remove-orphans
+          $COMPOSE down || true
+          $COMPOSE pull --ignore-pull-failures
+          $COMPOSE up -d --remove-orphans
           sleep 3
           docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 
-      - name: Wait & show logs
+      - name: Show service logs (tail)
         run: |
-          sleep 5
+          sleep 5 || true
           docker logs smartrecruit-backend --tail 120 || true
           docker logs smartrecruit-frontend --tail 120 || true
