@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -71,26 +73,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$DEPLOY_DIR"
-
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "Listing repository root (GITHUB_WORKSPACE):"
-          ls -la "$GITHUB_WORKSPACE" || true
-
-          # Locate compose file (repo root docker-compose.yml expected)
-          if [ -f "$GITHUB_WORKSPACE/docker-compose.yml" ]; then
-            SRC="$GITHUB_WORKSPACE/docker-compose.yml"
-          elif [ -f "$GITHUB_WORKSPACE/docker-compose.yaml" ]; then
+          SRC="$GITHUB_WORKSPACE/docker-compose.yml"
+          if [ ! -f "$SRC" ]; then
             SRC="$GITHUB_WORKSPACE/docker-compose.yaml"
-          else
-            echo "ERROR: docker-compose file not found in repo root"
+          fi
+          if [ ! -f "$SRC" ]; then
             exit 1
           fi
-
-          echo "Copying compose from $SRC to $DEPLOY_DIR/docker-compose.yml"
           cp -f "$SRC" "$DEPLOY_DIR/docker-compose.yml"
-
-          echo "Files in $DEPLOY_DIR:"
-          ls -la "$DEPLOY_DIR"
 
       - name: Pin images to current SHA
         env:
@@ -100,15 +90,8 @@ jobs:
           set -euo pipefail
           cd "$DEPLOY_DIR"
           cp docker-compose.yml docker-compose.yml.bak
-
-          # Replace any registry/username ending with smartrecruit-backend:TAG -> keep prefix and set tag to SHA
           sed -E "s|([^[:space:]]*/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
-          # Replace smartrecruit-frontend similarly
           sed -E "s|([^[:space:]]*/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
-
-          echo "---- docker-compose.yml (after pinning) ----"
-          sed -n '1,240p' docker-compose.yml || true
-          echo "-------------------------------------------"
 
       - name: Pull images and restart stack
         env:
@@ -120,14 +103,11 @@ jobs:
           else
             COMPOSE="docker compose"
           fi
-
           cd "$DEPLOY_DIR"
           docker network create smartrecruit-network || true
           $COMPOSE down || true
           $COMPOSE pull --ignore-pull-failures
           $COMPOSE up -d --remove-orphans
-          sleep 3
-          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 
       - name: Show service logs (tail)
         run: |
