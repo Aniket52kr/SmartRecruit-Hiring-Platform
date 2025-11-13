@@ -62,6 +62,8 @@ jobs:
         run: |
           echo "Deploy running on $(hostname)"
           whoami
+          id || true
+          uname -a || true
           docker --version || true
           docker compose version || true
 
@@ -76,20 +78,33 @@ jobs:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
-          if [ ! -f ./docker-compose.yml ]; then
-            echo "ERROR: docker-compose.yml not found at repo root."
-            exit 1
-          fi
           mkdir -p "$DEPLOY_DIR"
           mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"
-          cp -f ./docker-compose.yml "$DEPLOY_DIR/docker-compose.yml"
-          if [ ! -f ./backend/.env.prod ]; then
-            echo "ERROR: ./backend/.env.prod not found."
+
+          COMPOSE_PATH=$(find . -type f \( -iname 'docker-compose.yml' -o -iname 'docker-compose.yaml' \) -print -quit || true)
+          if [ -z "$COMPOSE_PATH" ]; then
+            echo "ERROR: no docker-compose.yml or docker-compose.yaml found in repository."
+            echo "Top-level listing:"
+            ls -la || true
+            echo "Repo tree (max depth 3):"
+            find . -maxdepth 3 -print || true
             exit 1
           fi
-          cp -f ./backend/.env.prod "$DEPLOY_DIR/backend/.env.prod"
+
+          echo "Found compose file at: $COMPOSE_PATH"
+          cp -f "$COMPOSE_PATH" "$DEPLOY_DIR/docker-compose.yml"
+          echo "Copied compose -> $DEPLOY_DIR/docker-compose.yml"
+
+          if [ -f ./backend/.env.prod ]; then
+            cp -f ./backend/.env.prod "$DEPLOY_DIR/backend/.env.prod"
+            echo "Copied backend/.env.prod -> $DEPLOY_DIR/backend/.env.prod"
+          else
+            echo "Warning: ./backend/.env.prod not found — continuing (ensure runner provides required envs if needed)."
+          fi
+
           cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
           cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
+          echo "Deploy dir contents:"
           ls -lR "$DEPLOY_DIR" || true
 
       - name: Replace latest tags with SHA-tagged images
