@@ -1,0 +1,121 @@
+name: Build, Push & Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      backend-tag: ${{ steps.backend.outputs.tag }}
+      frontend-tag: ${{ steps.frontend.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend
+        id: backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-latest
+        # export the tag for downstream job
+      - name: Set backend output tag
+        if: always()
+        run: echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:backend-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push frontend
+        id: frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
+            VITE_FRONTEND_URL=${{ secrets.VITE_FRONTEND_URL }}
+            VITE_APP_ID=${{ secrets.VITE_APP_ID }}
+            VITE_SERVER_SECRET=${{ secrets.VITE_SERVER_SECRET }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-latest
+
+      - name: Set frontend output tag
+        if: always()
+        run: echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit:frontend-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build-and-push
+    runs-on: [self-hosted, linux]
+    environment: production
+    steps:
+      - name: Show runner info
+        run: |
+          echo "Deploy running on $(hostname)"
+          whoami
+          docker --version || true
+          docker-compose --version || true
+
+      - name: Login to Docker Hub on runner
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Ensure deploy dir exists & copy compose
+        run: |
+          DEPLOY_DIR=~/smartrecruit
+          mkdir -p "$DEPLOY_DIR"
+          # overwrite the remote copy of docker-compose.yml with the one from the repo
+          # The workflow runner checks out the repo into a workspace; copy file from there to DEPLOY_DIR
+          cp -f ./docker-compose.yml "$DEPLOY_DIR/docker-compose.yml"
+          cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
+          cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
+          ls -l "$DEPLOY_DIR"
+
+      - name: Pull images & restart compose
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR=~/smartrecruit
+          cd "$DEPLOY_DIR"
+
+          # ensure network exists (runner should already have it)
+          docker network create smartrecruit-network || true
+
+          # Stop existing stack
+          docker-compose down || true
+
+          # Pull the images built in the previous job (frontend-latest & backend-latest)
+          docker-compose pull --ignore-pull-failures
+
+          # Start stack
+          docker-compose up -d --remove-orphans
+
+          # Show status
+          sleep 3
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+
+      - name: Wait & show logs (brief)
+        run: |
+          sleep 5
+          docker logs smartrecruit-backend --tail 120 || true
+          docker logs smartrecruit-frontend --tail 120 || true
