@@ -79,7 +79,7 @@ jobs:
           echo "Listing repository root (GITHUB_WORKSPACE):"
           ls -la "$GITHUB_WORKSPACE" || true
 
-          # Try common locations for compose file
+          # Locate compose file (your file is at repo root docker-compose.yml)
           if [ -f "$GITHUB_WORKSPACE/docker-compose.yml" ]; then
             SRC="$GITHUB_WORKSPACE/docker-compose.yml"
           elif [ -f "$GITHUB_WORKSPACE/docker-compose.yaml" ]; then
@@ -87,7 +87,7 @@ jobs:
           elif [ -f "$GITHUB_WORKSPACE/infra/docker-compose.yml" ]; then
             SRC="$GITHUB_WORKSPACE/infra/docker-compose.yml"
           else
-            echo "ERROR: docker-compose not found in common locations under $GITHUB_WORKSPACE"
+            echo "ERROR: docker-compose not found in expected locations under $GITHUB_WORKSPACE"
             echo "Contents of $GITHUB_WORKSPACE:"
             ls -la "$GITHUB_WORKSPACE" || true
             exit 1
@@ -96,26 +96,31 @@ jobs:
           echo "Copying compose from $SRC to $DEPLOY_DIR/docker-compose.yml"
           cp -f "$SRC" "$DEPLOY_DIR/docker-compose.yml"
 
-          # optional: copy env examples (no-fail)
-          cp -f "$GITHUB_WORKSPACE/backend/.env.example" "$DEPLOY_DIR/backend/.env.example" || true
-          cp -f "$GITHUB_WORKSPACE/frontend/.env.example" "$DEPLOY_DIR/frontend/.env.example" || true
+          # Copy env (no-fail if absent)
+          cp -f "$GITHUB_WORKSPACE/backend/.env.prod" "$DEPLOY_DIR/backend/.env.prod" || true
+          cp -f "$GITHUB_WORKSPACE/frontend/.env" "$DEPLOY_DIR/frontend/.env" || true
 
           echo "Files in $DEPLOY_DIR:"
           ls -la "$DEPLOY_DIR"
 
-      - name: Pin images to current SHA
+      - name: Pin images to current SHA (robust replacement)
         env:
           DEPLOY_DIR: ~/smartrecruit
-          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           cd "$DEPLOY_DIR"
           cp docker-compose.yml docker-compose.yml.bak
-          sed -E "s|(${DH_USER}/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
-          sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
-          echo "---- docker-compose.yml ----"
+
+          # Replace any registry/username that ends with /smartrecruit-backend:TAG -> keep prefix and replace tag with SHA
+          sed -E "s|([^[:space:]]*/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
+
+          # Replace smartrecruit-frontend similarly
+          sed -E "s|([^[:space:]]*/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
+
+          echo "---- docker-compose.yml (after pinning) ----"
           sed -n '1,240p' docker-compose.yml || true
+          echo "----------------------------------------------"
 
       - name: Pull images and restart stack
         env:
