@@ -41,7 +41,6 @@ jobs:
         with:
           context: ./frontend
           push: true
-          # Remove build-args if you don't need VITE_* at build time
           build-args: |
             VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
             VITE_FRONTEND_URL=${{ secrets.VITE_FRONTEND_URL }}
@@ -56,7 +55,7 @@ jobs:
     runs-on: [self-hosted, linux]
     environment: production
     steps:
-      - name: Checkout repository (so docker-compose.yml is available)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Show runner info
@@ -77,17 +76,23 @@ jobs:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
+          if [ ! -f ./docker-compose.yml ]; then
+            echo "ERROR: docker-compose.yml not found at repo root."
+            exit 1
+          fi
           mkdir -p "$DEPLOY_DIR"
           mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"
           cp -f ./docker-compose.yml "$DEPLOY_DIR/docker-compose.yml"
-          # committed production env (required by compose)
+          if [ ! -f ./backend/.env.prod ]; then
+            echo "ERROR: ./backend/.env.prod not found."
+            exit 1
+          fi
           cp -f ./backend/.env.prod "$DEPLOY_DIR/backend/.env.prod"
-          # optional examples
           cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
           cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
-          ls -lR "$DEPLOY_DIR"
+          ls -lR "$DEPLOY_DIR" || true
 
-      - name: Replace latest tags with SHA-tagged images (works with your image names)
+      - name: Replace latest tags with SHA-tagged images
         env:
           DEPLOY_DIR: ~/smartrecruit
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -96,41 +101,24 @@ jobs:
           set -euo pipefail
           cd "$DEPLOY_DIR"
           cp docker-compose.yml docker-compose.yml.bak
-
-          # Replace:
-          #   <user>/smartrecruit-backend:<anytag> -> <user>/smartrecruit-backend:<sha>
-          #   <user>/smartrecruit-frontend:<anytag> -> <user>/smartrecruit-frontend:<sha>
           sed -E "s|(${DH_USER}/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
           sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
-
-          echo "---- docker-compose.yml after replacement ----"
           sed -n '1,240p' docker-compose.yml || true
-          echo "-----------------------------------------------"
 
-      - name: Pull images & restart compose (deploy SHA-tagged images)
+      - name: Pull images & restart compose
         env:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
           cd "$DEPLOY_DIR"
-
-          # ensure network exists
           docker network create smartrecruit-network || true
-
-          # Stop existing stack (ignore errors)
           docker compose down || true
-
-          # Pull the exact SHA-tagged images
           docker compose pull --ignore-pull-failures
-
-          # Start stack with new images
           docker compose up -d --remove-orphans
-
-          # Show status
           sleep 3
           docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
 
-      - name: Wait & show logs (brief)
+      - name: Wait & show logs
         run: |
           sleep 5
           docker logs smartrecruit-backend --tail 120 || true
