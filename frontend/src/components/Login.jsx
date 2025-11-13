@@ -4,6 +4,8 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "./Button";
 
+import api from "../api/api";
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -14,7 +16,7 @@ const Login = () => {
     e.preventDefault();
     const formData = { email, password };
     try {
-      const response = await axios.post(`${BACKEND_URL}/login`, formData);
+      const response = await api.post("/login", formData);
       if (response.status === 200) {
         console.log("Successfull login : ", response);
         localStorage.setItem("email", response.data.user.email);

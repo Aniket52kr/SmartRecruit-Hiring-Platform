@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Button from "./Button";
 
+import api from "../api/api";
+
 const Signup = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -18,7 +20,7 @@ const Signup = () => {
     console.log("Clicked submit");
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/signup`, formData);
+      const response = await api.post("/signup", formData);
       console.log("response: ", response);
 
       // Handle success
