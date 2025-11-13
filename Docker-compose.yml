@@ -12,8 +12,7 @@ services:
     networks:
       - smartrecruit-network
 
-
-  frontend: 
+  frontend:
     image: aniket52kr/smartrecruit-frontend:latest
     container_name: smartrecruit-frontend
     restart: unless-stopped
@@ -24,7 +23,6 @@ services:
     networks:
       - smartrecruit-network
 
-
 networks:
   smartrecruit-network:
-    driver: bridge 
+    driver: bridge
