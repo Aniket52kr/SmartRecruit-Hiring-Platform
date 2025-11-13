@@ -65,9 +65,8 @@ jobs:
           id || true
           uname -a || true
           docker --version || true
-          # try both, ignore error
-          docker compose version || true
           docker-compose --version || true
+          docker compose version || true
 
       - name: Login to Docker Hub on runner
         uses: docker/login-action@v3
@@ -75,84 +74,69 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Ensure deploy dir exists & copy compose/env
+      - name: Prepare deploy dir and env files
         env:
           DEPLOY_DIR: ~/smartrecruit
         run: |
           set -euo pipefail
           mkdir -p "$DEPLOY_DIR"
           mkdir -p "$DEPLOY_DIR/backend" "$DEPLOY_DIR/frontend"
-
-          COMPOSE_PATH=$(find . -type f \( -iname 'docker-compose.yml' -o -iname 'docker-compose.yaml' \) -print -quit || true)
-          if [ -z "$COMPOSE_PATH" ]; then
-            echo "ERROR: no docker-compose.yml or docker-compose.yaml found in repository."
-            echo "Top-level listing:"
-            ls -la || true
-            echo "Repo tree (max depth 3):"
-            find . -maxdepth 3 -print || true
-            exit 1
-          fi
-
-          echo "Found compose file at: $COMPOSE_PATH"
-          cp -f "$COMPOSE_PATH" "$DEPLOY_DIR/docker-compose.yml"
-          echo "Copied compose -> $DEPLOY_DIR/docker-compose.yml"
-
           if [ -f ./backend/.env.prod ]; then
             cp -f ./backend/.env.prod "$DEPLOY_DIR/backend/.env.prod"
             echo "Copied backend/.env.prod -> $DEPLOY_DIR/backend/.env.prod"
           else
-            echo "Warning: ./backend/.env.prod not found — continuing (ensure runner provides required envs if needed)."
+            echo "Warning: ./backend/.env.prod not found; continuing without it."
           fi
-
           cp -f ./backend/.env.example "$DEPLOY_DIR/backend/.env.example" || true
           cp -f ./frontend/.env.example "$DEPLOY_DIR/frontend/.env.example" || true
-          echo "Deploy dir contents:"
           ls -lR "$DEPLOY_DIR" || true
 
-      - name: Replace latest tags with SHA-tagged images
+      - name: Pull images and run containers (no compose)
         env:
           DEPLOY_DIR: ~/smartrecruit
           DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          cd "$DEPLOY_DIR"
-          cp docker-compose.yml docker-compose.yml.bak
-          sed -E "s|(${DH_USER}/smartrecruit-backend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.bak > docker-compose.yml.tmp1
-          sed -E "s|(${DH_USER}/smartrecruit-frontend):[^[:space:]]+|\1:${SHA}|g" docker-compose.yml.tmp1 > docker-compose.yml
-          sed -n '1,240p' docker-compose.yml || true
 
-      - name: Pull images & restart compose (compatible)
-        env:
-          DEPLOY_DIR: ~/smartrecruit
-        run: |
-          set -euo pipefail
-          cd "$DEPLOY_DIR"
+          BACKEND_SHA_IMAGE="${DH_USER}/smartrecruit-backend:${SHA}"
+          BACKEND_LATEST_IMAGE="${DH_USER}/smartrecruit-backend:latest"
+          FRONTEND_SHA_IMAGE="${DH_USER}/smartrecruit-frontend:${SHA}"
+          FRONTEND_LATEST_IMAGE="${DH_USER}/smartrecruit-frontend:latest"
 
-          # choose compose command: prefer `docker compose`, fallback to `docker-compose`
-          if docker compose version >/dev/null 2>&1; then
-            COMPOSE_CMD="docker compose"
-          elif docker-compose --version >/dev/null 2>&1; then
-            COMPOSE_CMD="docker-compose"
-          else
-            echo "ERROR: neither 'docker compose' nor 'docker-compose' is available on runner."
-            exit 1
-          fi
+          echo "Attempting to pull backend image: $BACKEND_SHA_IMAGE"
+          docker pull "$BACKEND_SHA_IMAGE" || (echo "Failed to pull SHA backend, falling back to latest" && docker pull "$BACKEND_LATEST_IMAGE")
+          echo "Attempting to pull frontend image: $FRONTEND_SHA_IMAGE"
+          docker pull "$FRONTEND_SHA_IMAGE" || (echo "Failed to pull SHA frontend, falling back to latest" && docker pull "$FRONTEND_LATEST_IMAGE")
 
-          echo "Using compose command: $COMPOSE_CMD"
-
-          # ensure network exists (ignore error if already exists)
           docker network create smartrecruit-network || true
 
-          # bring down existing stack (ignore errors)
-          $COMPOSE_CMD down || true
+          docker stop smartrecruit-backend || true
+          docker rm smartrecruit-backend || true
 
-          # pull images (do not use flags that older clients don't support)
-          $COMPOSE_CMD pull || true
+          docker stop smartrecruit-frontend || true
+          docker rm smartrecruit-frontend || true
 
-          # start stack, remove orphans when supported
-          # older docker-compose supports --remove-orphans too
-          $COMPOSE_CMD up -d --remove-orphans || $COMPOSE_CMD up -d || true
+          if [ -f "${DEPLOY_DIR}/backend/.env.prod" ]; then
+            docker run -d --name smartrecruit-backend \
+              --restart unless-stopped \
+              --network smartrecruit-network \
+              --env-file "${DEPLOY_DIR}/backend/.env.prod" \
+              -p 3000:3000 \
+              "${BACKEND_SHA_IMAGE}" || docker run -d --name smartrecruit-backend --restart unless-stopped --network smartrecruit-network --env-file "${DEPLOY_DIR}/backend/.env.prod" -p 3000:3000 "${BACKEND_LATEST_IMAGE}"
+          else
+            docker run -d --name smartrecruit-backend \
+              --restart unless-stopped \
+              --network smartrecruit-network \
+              -p 3000:3000 \
+              "${BACKEND_SHA_IMAGE}" || docker run -d --name smartrecruit-backend --restart unless-stopped --network smartrecruit-network -p 3000:3000 "${BACKEND_LATEST_IMAGE}"
+          fi
+
+          docker run -d --name smartrecruit-frontend \
+            --restart unless-stopped \
+            --network smartrecruit-network \
+            -p 80:80 \
+            "${FRONTEND_SHA_IMAGE}" || docker run -d --name smartrecruit-frontend --restart unless-stopped --network smartrecruit-network -p 80:80 "${FRONTEND_LATEST_IMAGE}"
 
           sleep 3
           docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
