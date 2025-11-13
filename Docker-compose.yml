@@ -16,6 +16,8 @@ services:
     image: aniket52kr/smartrecruit-frontend:latest
     container_name: smartrecruit-frontend
     restart: unless-stopped
+    env_file:
+      - ./frontend/.env.prod
     ports:
       - "80:80"
     depends_on:
