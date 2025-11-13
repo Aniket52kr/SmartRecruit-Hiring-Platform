@@ -73,13 +73,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$DEPLOY_DIR"
-          SRC="$GITHUB_WORKSPACE/docker-compose.yml"
-          if [ ! -f "$SRC" ]; then
+
+          # Prefer repo-root docker-compose.yml or docker-compose.yaml
+          if [ -f "$GITHUB_WORKSPACE/docker-compose.yml" ]; then
+            SRC="$GITHUB_WORKSPACE/docker-compose.yml"
+          elif [ -f "$GITHUB_WORKSPACE/docker-compose.yaml" ]; then
             SRC="$GITHUB_WORKSPACE/docker-compose.yaml"
-          fi
-          if [ ! -f "$SRC" ]; then
+          else
+            echo "ERROR: docker-compose.yml or docker-compose.yaml not found in repo root ($GITHUB_WORKSPACE)" >&2
+            ls -la "$GITHUB_WORKSPACE" || true
             exit 1
           fi
+
           cp -f "$SRC" "$DEPLOY_DIR/docker-compose.yml"
 
       - name: Pin images to current SHA
