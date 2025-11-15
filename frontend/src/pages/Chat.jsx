@@ -16,8 +16,6 @@ import axios from "axios";
 import PropTypes from "prop-types";
 
 
-import api from "../api/api";
-
 
 // programming Languages versions:-
 const LANGUAGE_VERSIONS = {
@@ -96,7 +94,7 @@ const Chat = ({ userType = "candidate" }) => {
   // Update code in backend on change
   const handleCodeChange = async (newCode) => {
     setCode(newCode);
-    await api.post("/update", { text: newCode });
+    await axios.post(`${BACKEND_URL}/update`, { text: newCode });
   };
 
   // Send chat message
@@ -110,7 +108,7 @@ const Chat = ({ userType = "candidate" }) => {
     };
 
     try {
-      await api.post("/send-message", {
+      await axios.post(`${BACKEND_URL}/send-message`, {
         message: newMessage,
       });
       setCurrentMessage("");
@@ -122,7 +120,7 @@ const Chat = ({ userType = "candidate" }) => {
   useEffect(() => {
     const fetchProblems = async () => {
       try {
-        const response = await api.get("/getTech", {
+        const response = await axios.get(`${BACKEND_URL}/getTech`, {
           params: { userId: localStorage.getItem("userId") },
           headers: { "Content-Type": "application/json" },
         });

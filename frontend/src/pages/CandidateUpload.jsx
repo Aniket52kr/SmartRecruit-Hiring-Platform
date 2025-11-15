@@ -4,9 +4,6 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 
 
-import api from "../api/api";
-
-
 const CandidateUpload = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const candidatesPerPage = 15;
@@ -78,7 +75,7 @@ const CandidateUpload = () => {
       // localStorage.setItem("candidateData", JSON.stringify(candidateData));
 
       // Send candidate data to backend API
-      const response = await api.post("/updateUser", {
+      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
         userId: localStorage.getItem("userId"), // Assume recruiter is logged in and we have their email
         candidateData, // Send the array of candidate objects
       });

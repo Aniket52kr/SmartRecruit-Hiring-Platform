@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import api from "../api/api";
+
 
 export default function TechnicalInfo() {
   const [showPreGenerated, setShowPreGenerated] = useState(false);
@@ -97,8 +97,8 @@ export default function TechnicalInfo() {
     setLoader(true);
     // Simulated fetch
     console.log("techGenerationType: ", techGenerationType);
-    api
-      .get("/generateTech", {
+    axios 
+      .get(`${BACKEND_URL}/generateTech`, {
         timeout: 60000,
         params: { techType: techGenerationType },
       })
@@ -149,8 +149,8 @@ export default function TechnicalInfo() {
 
   const getAlreadyGeneratedProblems = () => {
     setLoader(true);
-    api
-      .get("/getTech")
+    axios
+      .get(`${BACKEND_URL}/getTech`)
       .then(({ data }) => {
         // axios already parses JSON and returns { data: ... }
         setExistingProblems(data.techEntries);
@@ -180,7 +180,7 @@ export default function TechnicalInfo() {
 
   const nextRound = async () => {
     try {
-      const response = await api.post("/updateUser", {
+      const response = await axios.post(`${BACKEND_URL}/updateUser`, {
         userId: localStorage.getItem("userId"), // Assume recruiter is logged in and we have their email
         passingMarksofTech: passingMarks, // Send the array of candidate objects
       });
@@ -194,7 +194,7 @@ export default function TechnicalInfo() {
     console.log("burH: ", selectedProblems);
     
     try {
-      const response = await api.post("/addTech", {
+      const response = await axios.post(`${BACKEND_URL}/addTech`, {
         problems: JSON.stringify({ problems: selectedProblems }),
         userId: localStorage.getItem("userId"),
       });

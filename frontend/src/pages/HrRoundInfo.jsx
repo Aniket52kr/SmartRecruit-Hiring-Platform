@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import sendEmail from "../components/email";
 import axios from "axios";
 
-import api from "../api/api";
+
 
 export default function HRRoundInfo() {
   const [isInstructionsRead, setIsInstructionsRead] = useState(false);
@@ -33,8 +33,8 @@ export default function HRRoundInfo() {
           return;
         }
 
-        const response = await api.get(
-          `/getUserInfo/${userId}`
+        const response = await axios.get(
+          `${BACKEND_URL}/getUserInfo/${userId}`
         );
         console.log("Dashboard data:", response.data);
 
