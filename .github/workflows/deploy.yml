@@ -41,7 +41,7 @@ jobs:
           push: true
           build-args: |
             VITE_BACKEND_URL=/api
-            VITE_FRONTEND_URL=http://15.206.170.87
+            VITE_FRONTEND_URL=https://smartrecruit.duckdns.org
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:${{ github.sha }}
             ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:latest
@@ -85,7 +85,7 @@ jobs:
           docker run -d --name smartrecruit-frontend \
             --restart unless-stopped \
             --network smartrecruit-network \
-            -p 80:80 \
+            -p 8080:80 \
             "${DH_USER}/smartrecruit-frontend:${SHA}"
 
           sleep 5
