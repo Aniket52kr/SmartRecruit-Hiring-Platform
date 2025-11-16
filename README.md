@@ -56,12 +56,20 @@ SmartRecruit introduces a multi-dimensional recruitment workflow with three comp
 
 --- 
 
+## 💻 Technology Stack
+
+| Layer        | Technologies |
+|--------------|--------------|
+| **Frontend** | React, Vite, Tailwind CSS, face-api.js |
+| **Backend**  | Node.js, Express.js |
+| **Database** | MongoDB |
+| **DevOps**   | Docker, Docker Hub, GitHub Actions, Nginx, Certbot |
+| **Infra**    | AWS EC2 (self-hosted runner), DuckDNS |
+
 
 ## 🛠 Getting Started
 
 ### Prerequisites
-
-Ensure the following technologies are installed:
 
 - Node.js
 - Express.js
@@ -101,17 +109,6 @@ Ensure the following technologies are installed:
 **Need Environment Variables?**
 
 - **Contact**: [aniketbawankar2021@gmail.com](mailto:aniketbawankar2021@gmail.com)
-
-## 💻 Technology Stack
-
-| Layer        | Technologies |
-|--------------|--------------|
-| **Frontend** | React, Vite, Tailwind CSS, face-api.js |
-| **Backend**  | Node.js, Express.js |
-| **Database** | MongoDB |
-| **DevOps**   | Docker, Docker Hub, GitHub Actions, Nginx, Certbot |
-| **Infra**    | AWS EC2 (self-hosted runner), DuckDNS |
-
 
 ## 🤝 Contribution Guidelines
 
