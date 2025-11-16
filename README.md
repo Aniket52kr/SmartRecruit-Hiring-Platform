@@ -68,6 +68,7 @@ Ensure the following technologies are installed:
 - MongoDB
 - React.js
 - Vite
+- Docker & Docker Compose
 
 ### Installation Steps
 
@@ -103,19 +104,14 @@ Ensure the following technologies are installed:
 
 ## 💻 Technology Stack
 
-- **Frontend**:
+| Layer        | Technologies |
+|--------------|--------------|
+| **Frontend** | React, Vite, Tailwind CSS, face-api.js |
+| **Backend**  | Node.js, Express.js |
+| **Database** | MongoDB |
+| **DevOps**   | Docker, Docker Hub, GitHub Actions, Nginx, Certbot |
+| **Infra**    | AWS EC2 (self-hosted runner), DuckDNS |
 
-  - React.js
-  - Vite
-  - Tailwind CSS
-
-- **Backend**:
-
-  - Node.js
-  - Express.js
-
-- **Database**:
-  - MongoDB
 
 ## 🤝 Contribution Guidelines
 
