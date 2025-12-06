@@ -40,7 +40,7 @@ jobs:
           context: ./frontend
           push: true
           build-args: |
-            VITE_BACKEND_URL=/api
+            VITE_BACKEND_URL=https://smartrecruit.duckdns.org/api
             VITE_FRONTEND_URL=https://smartrecruit.duckdns.org
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/smartrecruit-frontend:${{ github.sha }}
@@ -85,7 +85,9 @@ jobs:
           docker run -d --name smartrecruit-frontend \
             --restart unless-stopped \
             --network smartrecruit-network \
-            -p 8080:80 \
+            -p 80:80 \
+            -p 443:443 \
+            -v /etc/letsencrypt:/etc/letsencrypt:ro \
             "${DH_USER}/smartrecruit-frontend:${SHA}"
 
           sleep 5

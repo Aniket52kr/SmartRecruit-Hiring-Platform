@@ -16,6 +16,11 @@ services:
     image: aniket52kr/smartrecruit-frontend:latest
     container_name: smartrecruit-frontend
     restart: unless-stopped
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: http://localhost/api
+        VITE_FRONTEND_URL: http://localhost
     env_file:
       - ./frontend/.env
     ports:
